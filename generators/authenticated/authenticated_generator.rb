@@ -4,7 +4,8 @@ class AuthenticatedGenerator < Rails::Generator::NamedBase
   default_options :skip_migration => false,
                   :skip_routes    => false,
                   :old_passwords  => false,
-                  :include_activation => false
+                  :include_activation => false,
+                  :generate_site_keys_only => false
 
   attr_reader   :controller_name,
                 :controller_class_path,
@@ -400,6 +401,8 @@ protected
       "Don't generate a resource line in config/routes.rb")       { |v| options[:skip_routes] = v }
     opt.on("--old-passwords",
       "Use the older password encryption scheme (see README)")    { |v| options[:old_passwords] = v }
+    opt.on("--generate-site-keys-only",
+      "Only generate site_keys.rb")                               { |v| options[:generate_site_keys_only] = true]}
     opt.on("--dump-generator-attrs",
       "(generator debug helper)")                                 { |v| options[:dump_generator_attribute_names] = v }
   end
