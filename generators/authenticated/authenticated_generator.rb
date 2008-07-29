@@ -79,28 +79,13 @@ class AuthenticatedGenerator < Rails::Generator::NamedBase
   end
 
   def manifest
-    recorded_session = record do |m|
-      if options[:generate_site_keys_only]
+    recorded_session = nil
+    if options[:generate_site_keys_only]
+      recorded_session = record do |m|
         m.template 'site_keys.rb', site_keys_file
-        puts
-        puts ("-" * 70)
-        puts
-        if $rest_auth_site_key_from_generator.blank?
-          puts "You've set a nil site key. This preserves existing users' passwords,"
-          puts "but allows dictionary attacks in the unlikely event your database is"
-          puts "compromised and your site code is not.  See the README for more."
-        elsif $rest_auth_keys_are_new
-          puts "We've create a new site key in #{site_keys_file}.  If you have existing"
-          puts "user accounts their passwords will no longer work (see README). As always,"
-          puts "keep this file safe but don't post it in public."
-        else
-          puts "We've reused the existing site key in #{site_keys_file}.  As always,"
-          puts "keep this file safe but don't post it in public."
-        end
-        puts
-        puts ("-" * 70)
-        break;
       end
+    else
+    recorded_session = record do |m|
       # Check for class naming collisions.
       m.class_collisions controller_class_path,       "#{controller_class_name}Controller", # Sessions Controller
                                                       "#{controller_class_name}Helper"
@@ -278,6 +263,7 @@ class AuthenticatedGenerator < Rails::Generator::NamedBase
         m.route_name('logout',   '/logout',   {:controller => controller_controller_name, :action => 'destroy'})
       end
     end
+  end
 
     #
     # Post-install notes
@@ -301,10 +287,12 @@ class AuthenticatedGenerator < Rails::Generator::NamedBase
         puts "- Install the acts_as_state_machine plugin:"
         puts "    svn export http://elitists.textdriven.com/svn/plugins/acts_as_state_machine/trunk vendor/plugins/acts_as_state_machine"
       end
-      puts "- Add routes to these resources. In config/routes.rb, insert routes like:"
-      puts %(    map.signup '/signup', :controller => '#{model_controller_file_name}', :action => 'new')
-      puts %(    map.login  '/login',  :controller => '#{controller_file_name}', :action => 'new')
-      puts %(    map.logout '/logout', :controller => '#{controller_file_name}', :action => 'destroy')
+      unless options[:generate_site_keys_only]
+        puts "- Add routes to these resources. In config/routes.rb, insert routes like:"
+        puts %(    map.signup '/signup', :controller => '#{model_controller_file_name}', :action => 'new')
+        puts %(    map.login  '/login',  :controller => '#{controller_file_name}', :action => 'new')
+        puts %(    map.logout '/logout', :controller => '#{controller_file_name}', :action => 'destroy')
+      end
       if options[:include_activation]
         puts %(    map.activate '/activate/:activation_code', :controller => '#{model_controller_file_name}', :action => 'activate', :activation_code => nil)
       end
