@@ -36,47 +36,71 @@ class AuthenticatedGenerator < Rails::Generator::NamedBase
 
   def initialize(runtime_args, runtime_options = {})
     super
-
-    @rspec = has_rspec?
-
-    @controller_name = (args.shift || 'sessions').pluralize
-    @model_controller_name = @name.pluralize
-
-    # sessions controller
-    base_name, @controller_class_path, @controller_file_path, @controller_class_nesting, @controller_class_nesting_depth = extract_modules(@controller_name)
-    @controller_class_name_without_nesting, @controller_file_name, @controller_plural_name = inflect_names(base_name)
-    @controller_singular_name = @controller_file_name.singularize
-    if @controller_class_nesting.empty?
-      @controller_class_name = @controller_class_name_without_nesting
+    if options[:generate_site_keys_only]
+      load_or_initialize_site_keys()
     else
-      @controller_class_name = "#{@controller_class_nesting}::#{@controller_class_name_without_nesting}"
-    end
-    @controller_routing_name  = @controller_singular_name
-    @controller_routing_path  = @controller_file_path.singularize
-    @controller_controller_name = @controller_plural_name
+      @rspec = has_rspec?
 
-    # model controller
-    base_name, @model_controller_class_path, @model_controller_file_path, @model_controller_class_nesting, @model_controller_class_nesting_depth = extract_modules(@model_controller_name)
-    @model_controller_class_name_without_nesting, @model_controller_singular_name, @model_controller_plural_name = inflect_names(base_name)
+      @controller_name = (args.shift || 'sessions').pluralize
+      @model_controller_name = @name.pluralize
 
-    if @model_controller_class_nesting.empty?
-      @model_controller_class_name = @model_controller_class_name_without_nesting
-    else
-      @model_controller_class_name = "#{@model_controller_class_nesting}::#{@model_controller_class_name_without_nesting}"
-    end
-    @model_controller_routing_name    = @table_name
-    @model_controller_routing_path    = @model_controller_file_path
-    @model_controller_controller_name = @model_controller_plural_name
+      # sessions controller
+      base_name, @controller_class_path, @controller_file_path, @controller_class_nesting, @controller_class_nesting_depth = extract_modules(@controller_name)
+      @controller_class_name_without_nesting, @controller_file_name, @controller_plural_name = inflect_names(base_name)
+      @controller_singular_name = @controller_file_name.singularize
+      if @controller_class_nesting.empty?
+        @controller_class_name = @controller_class_name_without_nesting
+      else
+        @controller_class_name = "#{@controller_class_nesting}::#{@controller_class_name_without_nesting}"
+      end
+      @controller_routing_name  = @controller_singular_name
+      @controller_routing_path  = @controller_file_path.singularize
+      @controller_controller_name = @controller_plural_name
 
-    load_or_initialize_site_keys()
-    
-    if options[:dump_generator_attribute_names] 
-      dump_generator_attribute_names
+      # model controller
+      base_name, @model_controller_class_path, @model_controller_file_path, @model_controller_class_nesting, @model_controller_class_nesting_depth = extract_modules(@model_controller_name)
+      @model_controller_class_name_without_nesting, @model_controller_singular_name, @model_controller_plural_name = inflect_names(base_name)
+
+      if @model_controller_class_nesting.empty?
+        @model_controller_class_name = @model_controller_class_name_without_nesting
+      else
+        @model_controller_class_name = "#{@model_controller_class_nesting}::#{@model_controller_class_name_without_nesting}"
+      end
+      @model_controller_routing_name    = @table_name
+      @model_controller_routing_path    = @model_controller_file_path
+      @model_controller_controller_name = @model_controller_plural_name
+
+      load_or_initialize_site_keys()
+
+      if options[:dump_generator_attribute_names] 
+        dump_generator_attribute_names
+      end
     end
   end
 
   def manifest
     recorded_session = record do |m|
+      if options[:generate_site_keys_only]
+        m.template 'site_keys.rb', site_keys_file
+        puts
+        puts ("-" * 70)
+        puts
+        if $rest_auth_site_key_from_generator.blank?
+          puts "You've set a nil site key. This preserves existing users' passwords,"
+          puts "but allows dictionary attacks in the unlikely event your database is"
+          puts "compromised and your site code is not.  See the README for more."
+        elsif $rest_auth_keys_are_new
+          puts "We've create a new site key in #{site_keys_file}.  If you have existing"
+          puts "user accounts their passwords will no longer work (see README). As always,"
+          puts "keep this file safe but don't post it in public."
+        else
+          puts "We've reused the existing site key in #{site_keys_file}.  As always,"
+          puts "keep this file safe but don't post it in public."
+        end
+        puts
+        puts ("-" * 70)
+        break;
+      end
       # Check for class naming collisions.
       m.class_collisions controller_class_path,       "#{controller_class_name}Controller", # Sessions Controller
                                                       "#{controller_class_name}Helper"
