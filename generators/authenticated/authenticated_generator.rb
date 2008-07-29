@@ -402,7 +402,7 @@ protected
     opt.on("--old-passwords",
       "Use the older password encryption scheme (see README)")    { |v| options[:old_passwords] = v }
     opt.on("--generate-site-keys-only",
-      "Only generate site_keys.rb")                               { |v| options[:generate_site_keys_only] = true]}
+      "Only generate site_keys.rb")                               { |v| options[:generate_site_keys_only] = true}
     opt.on("--dump-generator-attrs",
       "(generator debug helper)")                                 { |v| options[:dump_generator_attribute_names] = v }
   end
